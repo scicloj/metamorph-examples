@@ -1,0 +1,26 @@
+{:paths ["src" "resources"]
+ :deps {org.clojure/clojure {:mvn/version "1.10.1"}
+        scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
+        ;; scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
+        techascent/tech.ml.dataset {:mvn/version "5.02-SNAPSHOT"}
+        techascent/tech.ml {:mvn/version "5.02-SNAPSHOT"}
+        ;; scicloj/notespace {:mvn/version "3-alpha2"}
+        sciloj/sklearn-clj  {:mvn/version "0.2.1"}
+        }
+
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {org.clojure/test.check {:mvn/version "1.1.0"}}}
+  :runner
+  {:extra-deps {com.cognitect/test-runner
+                {:git/url "https://github.com/cognitect-labs/test-runner"
+                 :sha "b6b3193fcc42659d7e46ecd1884a228993441182"}}
+   :main-opts ["-m" "cognitect.test-runner"
+               "-d" "test"]}
+  :jar {:extra-deps {seancorfield/depstar {:mvn/version "1.1.133"}}
+        :exec-fn hf.depstar/jar
+        :exec-args {:jar "metamorph-example.jar"}}
+  :install {:extra-deps {slipset/deps-deploy {:mvn/version "0.1.1"}}
+            :main-opts ["-m" "deps-deploy.deps-deploy" "install" "metamorph-example.jar"]}
+  :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "0.1.1"}}
+           :main-opts ["-m" "deps-deploy.deps-deploy" "deploy" "metamorph-example.jar"]}}}
