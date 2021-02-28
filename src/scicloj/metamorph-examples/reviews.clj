@@ -13,26 +13,23 @@
   )
 
 
-(defn model-maxent [options]
-  (fn [ctx]
-    ((ml-mm/model
-      (merge options
-             {:p (count (-> ctx :tech.v3.libs.smile.metamorph/count-vectorize-vocabulary :vocab->index-map))})) ctx)))
+
 
 (def pipe
   (morph/pipeline
    (ds-mm/select-columns [:Text :Score])
-   (memoize (smile/count-vectorize :Text :bow nlp/default-text->bow {}))
+   (smile/count-vectorize :Text :bow nlp/default-text->bow {})
    (smile/bow->sparse-array :bow :sparse #(nlp/->vocabulary-top-n % 1000))
    (ds-mm/set-inference-target :Score)
    (ds-mm/select-columns [:sparse :Score])
-   (model-maxent {:model-type :maxent-multinomial
-                  :sparse-column :sparse})))
+   (ml-mm/model {:p 1000
+                 :model-type :maxent-multinomial
+                 :sparse-column :sparse})))
 
 
 (def train-test-split
   (->
-   (ds/->dataset "test/data/reviews.csv.gz" {:key-fn keyword })
+   (ds/->dataset "data/reviews.csv.gz" {:key-fn keyword })
    (ds-mod/train-test-split )
    ))
 
@@ -51,13 +48,13 @@
            :metamorph/data (:test-ds train-test-split)
            })))
 
-
-(->
- predicted-ctx
- :metamorph/data
- :Score
- seq
- )
+(println
+ (->
+  predicted-ctx
+  :metamorph/data
+  :Score
+  seq
+  ))
 
 
 
