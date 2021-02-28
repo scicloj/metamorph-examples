@@ -1,4 +1,4 @@
-(ns sciloj.sklearn
+(ns scicloj.sklearn
   (:require [scicloj.metamorph.core :as morph]
             [tablecloth.pipeline :as tc]
             [tablecloth.api :as tc-api]

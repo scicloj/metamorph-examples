@@ -1,4 +1,4 @@
-(ns sciloj.metamorph-examples.reviews
+(ns scicloj.metamorph-examples.reviews
   (:require [scicloj.metamorph.core :as morph]
             ;; [tablecloth.pipeline :as tc]
             ;; [tablecloth.api :as tc-api]
