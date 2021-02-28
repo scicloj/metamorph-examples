@@ -5,7 +5,8 @@
         techascent/tech.ml.dataset {:mvn/version "5.02-SNAPSHOT"}
         techascent/tech.ml {:mvn/version "5.02-SNAPSHOT"}
         ;; scicloj/notespace {:mvn/version "3-alpha2"}
-        sciloj/sklearn-clj  {:mvn/version "0.2.1"}
+        scicloj/sklearn-clj  {:mvn/version "0.2.1"}
+        scicloj/notespace {:mvn/version "3-beta4"}
         }
 
  :aliases
