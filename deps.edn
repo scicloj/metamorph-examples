@@ -2,8 +2,8 @@
  :deps {org.clojure/clojure {:mvn/version "1.10.1"}
         scicloj/metamorph {:mvn/version "0.1.0-alpha1"}
         ;; scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
-        techascent/tech.ml.dataset {:mvn/version "5.02-SNAPSHOT"}
-        techascent/tech.ml {:mvn/version "5.02-SNAPSHOT"}
+        techascent/tech.ml.dataset {:mvn/version "5.01"}
+        techascent/tech.ml {:mvn/version "5.01"}
         ;; scicloj/notespace {:mvn/version "3-alpha2"}
         scicloj/sklearn-clj  {:mvn/version "0.2.1"}
         scicloj/notespace {:mvn/version "3-beta4"}

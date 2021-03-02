@@ -139,5 +139,6 @@ either adhoc or externalize them in specialized libraries.
 So far the functions were independent from each other, and did not have
 the need to 'communicate'"]
 
-["This we will see in this page: "]
+["This we will see in an other tutorial: "]
 
+["https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/deps/index.html"]
