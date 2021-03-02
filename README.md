@@ -5,7 +5,9 @@ Ths repository contains various examples for using [metamorph](https://github.co
 The examples are done using the great [notespace](https://github.com/scicloj/notespace) library for creating notebooks with Clojure.
 
 1. Introduction to metamorph pipelines: (https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/simplest/index.html)
-2. A simple NLP pipeline using bag-of-word tokenizer and Maxent classifier from Smile:
+2. Data exchange between pipeline steps
+(https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/deps/index.html)
+3. A simple NLP pipeline using bag-of-word tokenizer and Maxent classifier from Smile:
 (https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/reviews/index.html)
 
 ## License
