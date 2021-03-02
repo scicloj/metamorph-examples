@@ -4,7 +4,6 @@
         ;; scicloj/tablecloth {:mvn/version "5.00-beta-29-pipeline"}
         techascent/tech.ml.dataset {:mvn/version "5.01"}
         techascent/tech.ml {:mvn/version "5.01"}
-        ;; scicloj/notespace {:mvn/version "3-alpha2"}
         scicloj/sklearn-clj  {:mvn/version "0.2.1"}
         scicloj/notespace {:mvn/version "3-beta4"}
         }

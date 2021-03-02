@@ -4,10 +4,17 @@
             [notespace.state :as state]))
 
 
+
 ^kind/hidden
 (comment
   (notespace/render-static-html)
+  (notespace/init-with-browser)
+  (notespace/listen)
+
   )
+
+["# NLP Machine Learnining pipeline"]
+
 
 (require '[scicloj.metamorph.core :as morph]
          '[tech.v3.libs.smile.metamorph :as smile]
@@ -18,26 +25,38 @@
          '[tech.v3.ml.metamorph :as ml-mm]
          )
 
+["## One sequential pipeline"]
 
+["In here we setup a pipeline for text classification.
+The column to predict is the :Score, people gave in a product review.
+The pipleine consists in a :
+* count vectorize, which converts the text to a bag-of-words representation
+* a bow-to-sparse transformer, which transform the bag-of-words (as a map) into
+  the sparse format needed by the mexent model of Smile
+  We choose the top 1000 words as the vocabulary size
+* the maxent model, which can be trained oon tis data
+"]
 
 (def pipe
   (morph/pipeline
-   (ds-mm/select-columns [:Text :Score])
+   (morph/lift ds/select-columns [:Text :Score])
    (smile/count-vectorize :Text :bow nlp/default-text->bow {})
-   (smile/bow->sparse-array :bow :sparse #(nlp/->vocabulary-top-n % 1000))
+   (smile/bow->sparse-array :bow :bow-sparse #(nlp/->vocabulary-top-n % 1000))
    (ds-mm/set-inference-target :Score)
-   (ds-mm/select-columns [:sparse :Score])
+   (morph/lift ds/select-columns [:bow-sparse :Score])
    (ml-mm/model {:p 1000
                  :model-type :maxent-multinomial
-                 :sparse-column :sparse})))
+                 :sparse-column :bow-sparse})))
 
+["First we split the data in test/train,"]
 
 (def train-test-split
   (->
    (ds/->dataset "data/reviews.csv.gz" {:key-fn keyword })
-   (ds-mod/train-test-split )
-   ))
+   (ds-mod/train-test-split )))
 
+["and run the pipeline fn in mode :fit with the train data.
+This runs the pipeline ciluding teh training of teh model."]
 
 (def trained-ctx
   (pipe
@@ -45,95 +64,113 @@
     :metamorph/data (:train-ds train-test-split)
     }))
 
+["For predicting on new data, we need to merge the predicted pipeline context (which contains the trained model),
+and the new data and mode: transform"]
+
 (def predicted-ctx
   (pipe
    (merge trained-ctx
-           {:metamorph/mode :transform
+          {:metamorph/mode :transform
            :metamorph/data (:test-ds train-test-split)
            })))
 
+["Now  we have the prediction in the predicted contexts abd can get the :Score column"]
 
-(-> predicted-ctx
-    :metamorph/data
-    :Score
-    seq
-    frequencies)
+(-> predicted-ctx :metamorph/data :Score
+    seq frequencies)
 
 
+["## Composed pipeline"]
+
+["As each pipeline function returns an other function, we can simply
+collect the pipleine steps in sequneces and compose them."]
+
+["In this pipeline we use as well an other transformer, namely TfIdf"]
+
+["This defines the pre-processing pipeline."]
+
+(def preprocess-pipe
+  [(morph/lift ds/select-columns [:Text :Score])
+   (smile/count-vectorize :Text :bow nlp/default-text->bow {})
+   (smile/bow->tfidf :bow :tfidf)
+   (smile/bow->sparse-array :tfidf :bow-sparse #(nlp/->vocabulary-top-n % 1000))])
+
+["The we define the model pipeline."]
+
+(def model-pipe
+  [(ds-mm/set-inference-target :Score)
+   (ml-mm/model {:p 1000
+                 :model-type :maxent-multinomial
+                 :sparse-column :bow-sparse})])
+
+["Know we compose both to one full pipeline."]
+(def full-pipe
+  (apply morph/pipeline
+         (concat preprocess-pipe
+                 model-pipe)))
+
+["Runing trainig .."]
+(def trained-ctx
+  (full-pipe
+   {:metamorph/mode :fit
+    :metamorph/data (:train-ds train-test-split)}))
 
 
-^kind/hidden
-(comment
-  (def preprocess-pipe
-    [
-     (tc/select-columns [:Text :Score])
-     (smile/count-vectorize :Text :bow nlp/default-text->bow {})
-     (smile/bow->tf-idf :bow :tfidf)
-     (smile/bow->sparse-array :tfidf :sparse #(nlp/->vocabulary-top-n % 1000))
-     ])
+["Running prediction .."]
+(def predicted-ctx
+  (full-pipe
+   (merge
+    trained-ctx
+    {:metamorph/mode :transform
+     :metamorph/data (:test-ds train-test-split)})))
 
-  (def model-pipe
-    [
-     (ds/set-inference-target :Score)
-     (model-maxent {:model-type :maxent-multinomial
-                    :sparse-column :sparse})
-     ])
+["Result:"]
 
-  (def full-pipe
-    (apply morph/pipeline
-           (concat preprocess-pipe
-                   model-pipe)))
-
-  (def trained-pipeline
-    (full-pipe
-     {:metamorph/mode :fit
-      :metamorph/data
-      (tc-api/dataset "test/data/reviews.csv.gz" {:key-fn keyword })}))
-
-
-  (def predicted-pipeline
-    (full-pipe
-     (merge
-      trained-pipeline
-      {:metamorph/mode :transform
-       :metamorph/data
-       (tc-api/dataset "test/data/reviews.csv.gz" {:key-fn keyword })})))
-
-  )
-
-
-
-
-
-^kind/hidden
-(comment
-
-
-  (def preprocess-pipe
-    [
-     [:tc/select-columns [:Text :Score]]
-     [:smile/count-vectorize :Text :bow nlp/default-text->bow {}]
-     [:smile/bow->tf-idf :bow :tfidf]
-     [:smile/bow->sparse-array :tfidf :sparse #(nlp/->vocabulary-top-n % 1000)]
-     ])
-
-  (def model-pipe
-    [
-     [:ds/set-inference-target :Score]
-     [:model-maxent {:model-type :maxent-multinomial
-                     :sparse-column :sparse}]])
-
-  (def full-pipe
-    (morph/->pipeline
-     (concat preprocess-pipe
-             model-pipe)))
-
-  (def trained-pipeline
-    (full-pipe
-     {:metamorph/mode :fit
-      :metamorph/data
-      (tc-api/dataset "test/data/reviews.csv.gz" {:key-fn keyword })}))
+(-> predicted-ctx :metamorph/data :Score
+    seq frequencies)
 
 
 
-  )
+
+
+["## Alternative pipeline syntax: declarative"]
+
+["The pipelines can be as well expressed as pure maps.
+This is detailed here: https://scicloj.github.io/tablecloth/index.html#Pipeline"]
+
+(defn select-columns [col-seq]
+  (morph/lift ds/select-columns col-seq))
+
+
+(def preprocess-pipe
+  [[:select-columns [:Text :Score]]
+   [:smile/count-vectorize :Text :bow nlp/default-text->bow {}]
+   [:smile/bow->tfidf :bow :tfidf]
+   [:smile/bow->sparse-array :tfidf :bow-sparse #(nlp/->vocabulary-top-n % 1000)]])
+
+(def model-pipe
+  [[:ds-mm/set-inference-target :Score]
+   [:ml-mm/model {:p 1000
+                  :model-type :maxent-multinomial
+                  :sparse-column :bow-sparse}]] )
+
+(def full-pipe
+  (morph/->pipeline
+   (concat preprocess-pipe
+           model-pipe)))
+
+(def trained-ctx
+  (full-pipe
+   {:metamorph/mode :fit
+    :metamorph/data (:train-ds train-test-split)}))
+
+(def predicted-ctx
+  (full-pipe
+   (merge
+    predicted-ctx
+    {:metamorph/mode :transform
+     :metamorph/data (:test-ds train-test-split)})))
+
+
+(-> predicted-ctx :metamorph/data :Score
+    seq frequencies)
