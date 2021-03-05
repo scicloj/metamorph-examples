@@ -13,7 +13,7 @@
 
   )
 
-["# NLP Machine Learnining pipeline"]
+["# NLP Machine Learning pipeline"]
 
 
 (require '[scicloj.metamorph.core :as morph]
@@ -29,17 +29,17 @@
 
 ["In here we setup a pipeline for text classification.
 The column to predict is the :Score, people gave in a product review.
-The pipleine consists in a :
+The pipeline consists in a :
 * count vectorize, which converts the text to a bag-of-words representation
 * a bow-to-sparse transformer, which transform the bag-of-words (as a map) into
-  the sparse format needed by the mexent model of Smile
+  the sparse format needed by the maxent model of Smile
   We choose the top 1000 words as the vocabulary size
-* the maxent model, which can be trained oon tis data
+* the maxent model, which can be trained on this data
 "]
 
 (def pipe
   (morph/pipeline
-   (morph/lift ds/select-columns [:Text :Score])
+  (morph/lift ds/select-columns [:Text :Score])
    (smile/count-vectorize :Text :bow nlp/default-text->bow {})
    (smile/bow->sparse-array :bow :bow-sparse #(nlp/->vocabulary-top-n % 1000))
    (ds-mm/set-inference-target :Score)
@@ -56,13 +56,16 @@ The pipleine consists in a :
    (ds-mod/train-test-split )))
 
 ["and run the pipeline fn in mode :fit with the train data.
-This runs the pipeline ciluding teh training of teh model."]
+This runs the pipeline including the training of the model."]
 
 (def trained-ctx
   (pipe
    {:metamorph/mode :fit
     :metamorph/data (:train-ds train-test-split)
     }))
+
+
+
 
 ["For predicting on new data, we need to merge the predicted pipeline context (which contains the trained model),
 and the new data and mode: transform"]
@@ -74,7 +77,9 @@ and the new data and mode: transform"]
            :metamorph/data (:test-ds train-test-split)
            })))
 
-["Now  we have the prediction in the predicted contexts abd can get the :Score column"]
+
+
+["Now  we have the prediction in the predicted contexts and can get the :Score column"]
 
 (-> predicted-ctx :metamorph/data :Score
     seq frequencies)
@@ -83,9 +88,9 @@ and the new data and mode: transform"]
 ["## Composed pipeline"]
 
 ["As each pipeline function returns an other function, we can simply
-collect the pipleine steps in sequneces and compose them."]
+collect the pipeline steps in sequences and compose them."]
 
-["In this pipeline we use as well an other transformer, namely TfIdf"]
+["In this pipeline we use as well an other transformer, namely Tf-Idf"]
 
 ["This defines the pre-processing pipeline."]
 
@@ -109,7 +114,7 @@ collect the pipleine steps in sequneces and compose them."]
          (concat preprocess-pipe
                  model-pipe)))
 
-["Runing trainig .."]
+["Runing training .."]
 (def trained-ctx
   (full-pipe
    {:metamorph/mode :fit
