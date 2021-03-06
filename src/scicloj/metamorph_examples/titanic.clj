@@ -1,8 +1,7 @@
 (ns scicloj.metamorph-examples.titanic
   (:require
    [notespace.api :as note]
-   [notespace.kinds :as kind ]
-   ))
+   [notespace.kinds :as kind ]))
 
 (comment
   (note/init-with-browser)
@@ -11,7 +10,6 @@
   (note/render-static-html)
   (note/init)
   )
-
 
 
 (require '[scicloj.metamorph.core :as morph]
@@ -27,6 +25,13 @@
          '[tech.v3.ml.gridsearch :as grid]
          '[tech.v3.libs.smile.classification]
          '[tech.v3.ml.classification :as classif])
+
+["## Introduction "]
+
+[" In this example, we will train a model which is able to predict the survival of passengers from the Titanic dataset."
+ "In a real analysis, this would contain as well explorative analysis of the data, which I will skip here,
+as the purpose is to showcase methamorph.ml, which is about model evaluation and selection."
+ ]
 
 
 ["### Read data"]
@@ -52,7 +57,7 @@
 
 ["We want to create a new column :title which might help in the score.
 This is an example of custom function, which creates a new column from existing columns,
-which is a typical case of feature ingeneering."]
+which is a typical case of feature engineering."]
 
 (defn name->title [dataset]
   (-> dataset
@@ -82,7 +87,7 @@ which is a typical case of feature ingeneering."]
 
    ;; this key in the data is required by the function
    ;; scicloj.metamorph.ml/evaluate-pipeline
-   ;; and need to contain the target variable (the trueth)
+   ;; and need to contain the target variable (the truth)
    ;; as a dataset
    (fn [ctx]
      (assoc ctx
@@ -128,10 +133,10 @@ which `model` function is in the pipeline"]
   (->> evaluations
        (map
         #(hash-map :model (tech.v3.ml/thaw-model (get-in % [:fitted-ctx :model]))
-                   :metric (:metric %)
+                   :mean (:mean %)
                    :fitted-ctx (:fitted-ctx %)
                    :data (get-in % [:fitted-ctx :metamorph/data])))
-       (sort-by :metric)
+       (sort-by :mean)
        reverse
        ))
 
@@ -144,7 +149,7 @@ which `model` function is in the pipeline"]
 
  ["with a accuracy of :"]
 
-(:metric (first models))
+(:mean (first models))
 
 ["The pre-processed data is:"]
 ^kind/dataset-grid
@@ -180,7 +185,7 @@ predictions
 ;;     new-data
 ;;     :accuracy)))
 
-["Out of the predictions and the trueth, we can construct the
+["Out of the predictions and the truth, we can construct the
  confusion matrix."]
 
 (def trueth
@@ -203,11 +208,13 @@ so become hyper-parameters of the model.
 
 The `use-age?` options is used to make a conditional pipeline. As the use-age? variable becomes part of the grid to search in,
 we tune it as well.
-This is an example how pipeline-options can be grid searched in the same way then hyper-parametes of th model.
+This is an example how pipeline-options can be grid searched in the same way then hyper-parameters of the model.
 
 "]
 (defn make-pipeline-fn [options]
+
   (morph/pipeline
+   options
    (if (:use-age? options)
      (tc-mm/select-columns [:survived :pclass :name :sex :age])
      (tc-mm/select-columns [:survived :pclass :name :sex])
@@ -218,24 +225,24 @@ This is an example how pipeline-options can be grid searched in the same way the
    (fn [ctx]
      (assoc ctx
             :scicloj.metamorph.ml/target-ds (cf/target (:metamorph/data ctx))))
+   ;; any plain map in a pipeline definition get merged into the context
+   ;; this is used here to configure the if for the next step
+   ;; so the id can be set by the user
    {:metamorph/id :model}
    (ml-mm/model
     (merge options
-           {:model-type :smile.classification/random-forest})
-    )
-   ))
+           {:model-type :smile.classification/random-forest}))))
 
 ["Use sobol optimization, to find 100 grid points,
-wich cover in a smart way the full hyper-parameter space."]
+which cover in a smart way the hyper-parameter space."]
 
 (def search-grid
   (->>
-   (grid/sobol-gridsearch {:trees (grid/linear 1 500 10)
+   (grid/sobol-gridsearch {:trees (grid/linear 100 500 10)
                            :split-rule (grid/categorical [:gini :entropy])
                            :max-depth (grid/linear 1 50 10 )
                            :node-size (grid/linear 1 10 10)
                            :sample-rate (grid/linear 0.1 1 10)
-                           :mtry (grid/categorical [0 1 2 3 4])
                            :use-age? (grid/categorical [true false])})
    (take 100))
   )
@@ -251,19 +258,20 @@ wich cover in a smart way the full hyper-parameter space."]
    splits
    loss/classification-accuracy
    :accuracy
-   10
+   100
    ))
 
-["Get the key information from the evaluations and sort by the metric function used, accuracy here."]
+["Get the key information from the evaluations and sort by the metric function used,
+ accuracy here."]
 
 (def models
   (->> evaluations
        (map
-        #(hash-map :model (tech.v3.ml/thaw-model (get-in % [:fitted-ctx :model]))
-                   :metric (:metric %)
-                   :fitted-ctx (:fitted-ctx %)
-                   :data (get-in % [:fitted-ctx :metamorph/data])))
-       (sort-by :metric)
+        #(assoc
+          (select-keys % [:metric :mean :fitted-ctx])
+          :model (tech.v3.ml/thaw-model (get-in % [:fitted-ctx :model]))
+          :data (get-in % [:fitted-ctx :metamorph/data])))
+       (sort-by :mean)
        reverse))
 
 (def best-model (first models))
@@ -271,6 +279,8 @@ wich cover in a smart way the full hyper-parameter space."]
 ["The one with the highest accuracy is then:"]
 (:model best-model)
 
- ["with a accuracy of :"]
+ ["with a accuracy of "  (:metric best-model)
+  "and a mean accuracy of " (:mean best-model)]
 
-(:metric best-model)
+["using options: "]
+(-> best-model :fitted-ctx :pipeline-options)
