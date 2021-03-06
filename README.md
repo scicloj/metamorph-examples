@@ -8,7 +8,8 @@ The examples are done using the great [notespace](https://github.com/scicloj/not
 2. Data exchange between pipeline steps
 (https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/deps/index.html)
 3. A simple NLP pipeline using bag-of-word tokenizer and Maxent classifier from Smile:
-(https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/reviews/index.html)
+4. Prediction survival of titatnic. Uses `metamorph.ml` for evaluation and selection of models
+(https://scicloj.github.io/metamorph-examples/scicloj/metamorph-examples/titanic/index.html)
 
 ## License
 
