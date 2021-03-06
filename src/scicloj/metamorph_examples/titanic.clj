@@ -8,6 +8,7 @@
   (note/init-with-browser)
   (note/eval-this-notespace)
   (note/reread-this-notespace)
+  (note/render-static-html)
   (note/init)
   )
 
