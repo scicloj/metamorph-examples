@@ -1,6 +1,6 @@
 # metamorph-examples
 
-Ths repository contains various examples for using [metamorph](https://github.com/scicloj/metamorph) library.
+Ths repository contains various examples for using the [metamorph](https://github.com/scicloj/metamorph) library.
 
 The examples are done using the great [notespace](https://github.com/scicloj/notespace) library for creating notebooks with Clojure.
 
