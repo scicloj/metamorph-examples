@@ -42,14 +42,23 @@ as the purpose is to showcase methamorph.ml, which is about model evaluation and
 ["Column names:"]
 (tablecloth.api/column-names data)
 
-["Use part of the data as new-data to predict on later."]
-(def splits-1 (tablecloth.api/split->seq data :holdout {:ratio 0.1}))
-(def new-data (:train (first splits-1)))
+["The following splits the dataset in three pieces,
+ train, test and new-data to predict on later.
+"]
 
-["Create a sequence of train/test used to evaluate the pipeline."]
-(def splits (tablecloth.api/split->seq
-             (:test (first splits-1))
-             :kfold))
+["As the tablecloth split function always splits in 2, we use it twice to get the
+three pieces."]
+
+
+(def new-rest-split (first (tablecloth.api/split->seq data :holdout {:ratio 0.1})))
+(def new-data (:train new-rest-split))
+(def rest-ds (:test new-rest-split))
+
+["Create a sequence of train/test  (k-fold with k=5) splits used to evaluate the pipeline."]
+(def train-test-splits
+    (tablecloth.api/split->seq
+   (:test new-rest-split)
+   :kfold))
 
 
 
@@ -103,7 +112,7 @@ which is a typical case of feature engineering."]
 (def evaluations
   (eval-mm/evaluate-pipelines
    [pipeline-fn]
-   splits
+   train-test-splits
    loss/classification-accuracy
    :accuracy))
 
@@ -137,8 +146,7 @@ which `model` function is in the pipeline"]
                    :fitted-ctx (:fitted-ctx %)
                    :data (get-in % [:fitted-ctx :metamorph/data])))
        (sort-by :mean)
-       reverse
-       ))
+       reverse))
 
 
 ["The 1 (best out of 5) trained model is:"]
@@ -147,7 +155,7 @@ which `model` function is in the pipeline"]
 ["The one with the highest accuracy is then:"]
 (:model (first models))
 
- ["with a accuracy of :"]
+ ["with a mean accuracy of :"]
 
 (:mean (first models))
 
@@ -157,8 +165,11 @@ which `model` function is in the pipeline"]
 
 
 
-["We can get the predictions, which for classification contain as well
+["We can get the predictions on new-data, which for classification contain as well
 the posterior probabilities per class."]
+
+["We do this by running the pipeline again, this time with new data and merging
+:mode transform"]
 
 (def predictions
   (->
@@ -166,8 +177,7 @@ the posterior probabilities per class."]
     (assoc
      (:fitted-ctx (first models))
      :metamorph/data new-data
-     :metamorph/mode :transform
-     ))
+     :metamorph/mode :transform))
    :metamorph/data))
 
 ^kind/dataset
@@ -214,7 +224,6 @@ This is an example how pipeline-options can be grid searched in the same way the
 (defn make-pipeline-fn [options]
 
   (morph/pipeline
-   options
    (if (:use-age? options)
      (tc-mm/select-columns [:survived :pclass :name :sex :age])
      (tc-mm/select-columns [:survived :pclass :name :sex])
@@ -274,13 +283,15 @@ which cover in a smart way the hyper-parameter space."]
        (sort-by :mean)
        reverse))
 
+
+["As we sorted by mean accuracy, the first evaluation result is te best model,"]
 (def best-model (first models))
 
-["The one with the highest accuracy is then:"]
+["which is: "]
 (:model best-model)
 
  ["with a accuracy of "  (:metric best-model)
   "and a mean accuracy of " (:mean best-model)]
 
 ["using options: "]
-(-> best-model :fitted-ctx :pipeline-options)
+(-> best-model :fitted-ctx :model :options)
