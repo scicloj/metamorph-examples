@@ -2,11 +2,10 @@
  :deps {org.clojure/clojure {:mvn/version "1.10.1"}
         scicloj/metamorph {:mvn/version "0.1.0-alpha2"}
         scicloj/metamorph.ml {:mvn/version "0.1.0-alpha2"}
-        techascent/tech.ml.dataset {:mvn/version "5.01"}
         techascent/tech.ml {:mvn/version "5.01"}
         scicloj/sklearn-clj  {:mvn/version "0.2.1"}
         scicloj/notespace {:mvn/version "3-beta4"}
-        scicloj/tablecloth {:mvn/version "5.01"}
+        scicloj/tablecloth {:mvn/version "5.04"}
         }
 
  :aliases

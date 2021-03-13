@@ -43,22 +43,21 @@ as the purpose is to showcase methamorph.ml, which is about model evaluation and
 (tablecloth.api/column-names data)
 
 ["The following splits the dataset in three pieces,
- train, test and new-data to predict on later.
+ train, val and test to predict on later.
 "]
 
-["As the tablecloth split function always splits in 2, we use it twice to get the
-three pieces."]
 
-
-(def new-rest-split (first (tablecloth.api/split->seq data :holdout {:ratio 0.1})))
-(def new-data (:train new-rest-split))
-(def rest-ds (:test new-rest-split))
+(def ds-split (first (tablecloth.api/split->seq data :holdout {:ratio [0.8 0.2]
+                                                               :split-names [:train-val :test]}
+                                                      )))
 
 ["Create a sequence of train/test  (k-fold with k=5) splits used to evaluate the pipeline."]
-(def train-test-splits
+(def train-val-splits
     (tablecloth.api/split->seq
-   (:test new-rest-split)
-   :kfold))
+     (:train-val ds-split)
+     :kfold
+
+     ))
 
 
 
@@ -105,14 +104,13 @@ which is a typical case of feature engineering."]
    ;; we overwrite the id, so the model function will store
    ;; it's output (the model) in the pipeline ctx under key :model
    {:metamorph/id :model}
-   (ml-mm/model {:model-type :smile.classification/random-forest})
-   ))
+   (ml-mm/model {:model-type :smile.classification/random-forest})))
 
 ["Evaluate the (single) pipeline function using the train/test split"]
 (def evaluations
   (eval-mm/evaluate-pipelines
    [pipeline-fn]
-   train-test-splits
+   train-val-splits
    loss/classification-accuracy
    :accuracy))
 
@@ -176,7 +174,7 @@ the posterior probabilities per class."]
    (pipeline-fn
     (assoc
      (:fitted-ctx (first models))
-     :metamorph/data new-data
+     :metamorph/data (:test ds-split)
      :metamorph/mode :transform))
    :metamorph/data))
 
@@ -200,7 +198,7 @@ predictions
 
 (def trueth
   (->
-   (pipeline-fn {:metamorph/data new-data :metamorph/mode :fit })
+   (pipeline-fn {:metamorph/data (:test ds-split) :metamorph/mode :fit })
    :metamorph/data
    tech.v3.dataset.modelling/labels))
 
@@ -264,7 +262,7 @@ which cover in a smart way the hyper-parameter space."]
 (def evaluations
   (eval-mm/evaluate-pipelines
    pipeline-fns
-   splits
+   train-val-splits
    loss/classification-accuracy
    :accuracy
    100
